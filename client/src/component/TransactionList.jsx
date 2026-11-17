@@ -17,6 +17,8 @@ const CATEGORIES = [
 export default function TransactionList({
   transactions,
   onTransactionDeleted,
+  onEditTransaction,
+  editingId,
 }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
@@ -25,7 +27,7 @@ export default function TransactionList({
   const handleDelete = async (id) => {
     try {
       await deleteTransaction(id);
-      onTransactionDeleted();
+      onTransactionDeleted(id);
     } catch (err) {
       console.error("Failed to delete transaction:", err);
     }
@@ -55,6 +57,35 @@ export default function TransactionList({
     setCategoryFilter("All");
   };
 
+  // Handler to export filtered transactions as a CSV file
+  const exportToCSV = () => {
+    if (filteredTransactions.length === 0) return;
+
+    const headers = ["Title", "Type", "Category", "Amount", "Date"];
+    const rows = filteredTransactions.map((tx) => [
+      `"${tx.title.replace(/"/g, '""')}"`,
+      tx.type,
+      `"${tx.category}"`,
+      tx.amount,
+      new Date(tx.date).toLocaleDateString(),
+    ]);
+
+    const csvContent =
+      "data:text/csv;charset=utf-8," +
+      [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute(
+      "download",
+      `finance_report_${new Date().toISOString().split("T")[0]}.csv`,
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
@@ -65,14 +96,25 @@ export default function TransactionList({
           </span>
         </h2>
 
-        {hasActiveFilters && (
-          <button
-            onClick={resetFilters}
-            className="text-xs font-medium text-blue-600 hover:text-blue-800 self-start sm:self-auto"
-          >
-            Reset Filters
-          </button>
-        )}
+        <div className="flex items-center gap-3">
+          {hasActiveFilters && (
+            <button
+              onClick={resetFilters}
+              className="text-xs font-medium text-blue-600 hover:text-blue-800"
+            >
+              Reset Filters
+            </button>
+          )}
+
+          {filteredTransactions.length > 0 && (
+            <button
+              onClick={exportToCSV}
+              className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-medium rounded-lg transition flex items-center gap-1.5"
+            >
+              <span>Export CSV</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Filter Controls */}
@@ -126,12 +168,17 @@ export default function TransactionList({
                 <th className="py-3 px-2">Category</th>
                 <th className="py-3 px-2">Date</th>
                 <th className="py-3 px-2 text-right">Amount</th>
-                <th className="py-3 px-2 text-right">Action</th>
+                <th className="py-3 px-2 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 text-sm">
               {filteredTransactions.map((tx) => (
-                <tr key={tx._id} className="hover:bg-gray-50 transition">
+                <tr
+                  key={tx._id}
+                  className={`transition ${
+                    editingId === tx._id ? "bg-blue-50/70" : "hover:bg-gray-50"
+                  }`}
+                >
                   <td className="py-3 px-2 font-medium text-gray-900">
                     {tx.title}
                   </td>
@@ -153,7 +200,13 @@ export default function TransactionList({
                     {tx.type === "income" ? "+" : "-"}$
                     {Number(tx.amount).toFixed(2)}
                   </td>
-                  <td className="py-3 px-2 text-right">
+                  <td className="py-3 px-2 text-right space-x-3">
+                    <button
+                      onClick={() => onEditTransaction(tx)}
+                      className="text-blue-600 hover:text-blue-800 text-xs font-medium transition"
+                    >
+                      Edit
+                    </button>
                     <button
                       onClick={() => handleDelete(tx._id)}
                       className="text-gray-400 hover:text-red-600 text-xs font-medium transition"
