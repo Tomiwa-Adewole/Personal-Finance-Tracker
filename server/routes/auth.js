@@ -1,3 +1,8 @@
+const express = require("express");
+const router = express.Router();
+const User = require("../models/User"); // Adjust this path if your User model is in a different folder
+const bcrypt = require("bcrypt");
+
 // REGISTER ROUTE
 router.post("/register", async (req, res) => {
   try {
@@ -5,9 +10,9 @@ router.post("/register", async (req, res) => {
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(409).json({ 
+      return res.status(409).json({
         message: "User with this email already exists.",
-        accountExists: true // Added flag for the frontend button
+        accountExists: true,
       });
     }
 
@@ -34,3 +39,5 @@ router.post("/register", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+module.exports = router;
