@@ -54,6 +54,11 @@ const errorHandler = require("./middleware/errorHandler");
 app.use(errorHandler);
 
 // --- DATABASE CONNECTION & SERVER START ---
+if (!process.env.MONGO_URI) {
+  console.error("FATAL ERROR: MONGO_URI environment variable is not defined.");
+  process.exit(1);
+}
+
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => {
