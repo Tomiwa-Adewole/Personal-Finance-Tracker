@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const User = require("../models/User"); // Adjust this path if your User model is in a different folder
-const bcrypt = require("bcrypt");
+const bcrypt = require('bcryptjs');
 
 // REGISTER ROUTE
 router.post("/register", async (req, res) => {
